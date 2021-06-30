@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Multi-User Video Call</title>
+
+        <meta content="width=device-width, initial-scale=1" name="viewport" />
+
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+        <link rel='stylesheet' href='assets/css/app.css' type="text/css">
+
+        <script src='/socket.io/socket.io.js'></script>
+        <script type="module" src='assets/js/rtc.js'></script>
+        <script type="module" src='assets/js/events.js'></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/7.3.0/adapter.min.js" integrity="sha256-2qQheewaqnZlXJ3RJRghVUwD/3fD9HNqxh4C+zvgmF4=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+
+    </head>
+
+    <body  style="background-color:#242F41;">
+        <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+            <div class="text-white"> <b>Video Chat </b></div>
+        </nav>
+            <div class="pull-right room-comm" id="footer" hidden>   <!-- ye theek h but footer ki opacity kam krne me issue tha bas itta bhi nhi -->
+                <div class="row"> 
+                    <!-- <div class="col-sm-4 col-md-4 col-lg-4"> -->
+                        <button id='toggle-video'>
+                            <i class="fa fa-video text-white"></i>
+                        </button>
+                    <!-- </div> -->
+                    <!-- class="btn btn-sm rounded-0 btn-no-effect" -->
+                    <!-- <div class="col-sm-4 col-md-4 col-lg-4"> -->
+                        <button id='toggle-mute'>
+                            <!-- <ul class = "navbar nav ml-auto"></ul> -->
+                            <i class="fa fa-volume-up text-white"></i>
+
+                        </button>
+                        
+                    <!-- </div> -->
+                    <!-- <button class="btn btn-sm text-white pull-right d-md-none btn-no-effect" id='toggle-chat-pane'> -->
+                        <button class="btn btn-sm rounded-0 btn-no-effect text-white" id='toggle-chat-pane'>
+                        <i class="fa fa-comment"></i> 
+                        <a href="/" class="text-white text-decoration-none"><span class="badge badge-danger very-small font-weight-lighter" id='new-chat-notification' hidden>New</span></a>
+                    </button>
+
+                    <!-- <div class="col-sm-4 col-md-4 col-lg-4"> -->
+                        <button class="btn btn-sm rounded-0 btn-no-effect text-white">
+                            <button id='leave-room'>
+                            <a href="/" class="fa fa-phone text-white"></a> </button>
+                            <!-- <a href="/" class="text-white text-decoration-none">Leave Room</a> -->
+                        </button>
+                        <button id="share_screen" >Share screen</button>  <!-- screen sharing -->
+                    </div>
+                </div>
+            </div>
+        
+
+        <div class="container-fluid" id='room-create' hidden>
+            <div class="row">
+                <div class="col-12 h2 mt-5 text-center text-white">Create Room</div>
+            </div>
+            
+            <div class="row mt-2">
+                <div class="col-12 text-center">
+                    <span class="form-text small text-danger" id='err-msg'></span>
+                </div>
+
+                <div class="col-12 col-md-4 offset-md-4 mb-3 text-white">
+                    <label for="room-name">Room Name</label>
+                    <input type="text" id='room-name' class="form-control rounded-0" placeholder="Enter Name">
+                </div>
+
+                <div class="col-12 col-md-4 offset-md-4 mb-3 text-white">
+                    <label for="your-name">Your Name</label>
+                    <input type="text" id='your-name' class="form-control rounded-0" placeholder="Enter Name">
+                </div>
+
+                <div class="col-12 col-md-4 offset-md-4 mb-3">
+                    <i class=" "></i>
+                    <button id='create-room' class="btn btn-block rounded-0 btn-primary fa fa-video"> &nbsp Start call</button>
+                </div>
+
+                <div class="col-12 col-md-4 offset-md-4 mb-3" id='room-created'></div>
+            </div>
+        </div>
+
+
+
+        <div class="container-fluid" id='username-set' hidden>
+            <div class="row">
+                <div class="col-12 h4 mt-5 text-center text-white">Your Name</div>
+            </div>
+            
+            <div class="row mt-2">
+                <div class="col-12 text-center">
+                    <span class="form-text small text-danger" id='err-msg-username'></span>
+                </div>
+
+                <div class="col-12 col-md-4 offset-md-4 mb-3 text-white" >
+                    <label for="username">Your Name</label>
+                    <input type="text" id='username' class="form-control rounded-0" placeholder="Your Name">
+                </div>
+
+                <div class="col-12 col-md-4 offset-md-4 mb-3">
+                    <button id='enter-room' class="btn btn-block rounded-0 btn-primary">Enter Room</button>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="container-fluid room-comm" hidden>
+            <div class="row">
+                <video class="local-video" id='local' volume='0' autoplay muted></video>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-9 mt-3  main">
+                    <div class="row" id='videos'></div>
+                </div>
+
+                <div class="col-md-3 chat-col d-print-none mb-2 bg-light" id='chat-pane'>
+                    <div style="background-color:#343a40">
+                    <div class="row"> 
+                        <div class="col-12 text-center h2 mb-3">Chat</div>
+                    </div>
+                    </div>
+                    <div id='chat-messages'></div>
+
+                    <div class="row">
+                        <textarea id='chat-input' class="form-control rounded-0 chat-box border-info" rows='3' placeholder="Type a new message"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        
+        <!-- <p id="count">Disconnected.</p>
+        <div id="container" class="container">
+            <div id="local" class="participant"><div></div><div class="label">Me</div></div>
+             more participants will be added dynamically here --
+        </div> -->
+
+        <script src="//media.twiliocdn.com/sdk/js/video/releases/2.3.0/twilio-video.min.js"></script>
+        <script src="{{ url_for('static', filename='events.js') }}"></script>
+
+    </body>
+</html>
